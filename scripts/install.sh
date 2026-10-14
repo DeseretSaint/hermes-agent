@@ -644,8 +644,27 @@ stage_repository() {
             log "Keeping its checkout: \`hermes update\` moves it (\`hermes update --set-channel main\` follows main)"
             return 0
         fi
-        run_logged "Fetching origin/$BRANCH" git -C "$INSTALL_DIR" fetch origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" \
-            || fail "git fetch failed$(native_detail)" git_fetch_failed
+        # An interrupted clone/update (a phone launcher killing a half-done
+        # install) can leave .git/objects/info/commit-graph referencing an object
+        # the object store no longer has; the next fetch then aborts with "which
+        # is in the commit graph file but not in the object database ... use 'git
+        # fetch --refetch'", and every retry fails the same way. On that exact
+        # failure, refetch to rebuild the graph from the remote once before
+        # giving up; other fetch failures still fail fast.
+        if ! run_logged "Fetching origin/$BRANCH" \
+            git -C "$INSTALL_DIR" fetch origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" \
+            2>"$INSTALL_DIR/.hermes-fetch.err"; then
+            if grep -qi 'commit graph file but not in the object' "$INSTALL_DIR/.hermes-fetch.err" 2>/dev/null; then
+                log_warn "Commit-graph references a missing object (corrupt/partial clone); refetching..."
+                run_logged "Refetching origin/$BRANCH" \
+                    git -C "$INSTALL_DIR" fetch --refetch origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" \
+                    || fail "git fetch --refetch failed$(native_detail)" git_fetch_failed
+            else
+                cat "$INSTALL_DIR/.hermes-fetch.err" >&2 || true
+                fail "git fetch failed$(native_detail)" git_fetch_failed
+            fi
+        fi
+        rm -f "$INSTALL_DIR/.hermes-fetch.err"
         local stamp
         stamp="$(date -u +%Y%m%d-%H%M%S)"
         # Park local work BEFORE switching branches: checkout refuses a dirty
