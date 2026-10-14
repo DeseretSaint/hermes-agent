@@ -21,10 +21,19 @@ import sys
 
 # Explicit uv index / transport settings that survive into uv. UV_INDEX_<NAME>_
 # {USERNAME,PASSWORD} credentials match by prefix in is_forwarded().
+#
+# UV_LINK_MODE is a filesystem knob, not an index redirect: it controls whether
+# uv hardlinks or copies packages out of its cache. Forward it so a caller can
+# force copy mode on filesystems where hardlinks fail — proot with
+# --link2symlink (Omalauncher on Android) turns uv's cache hardlinks into
+# symlinks that then fail with "failed to hardlink file ... Operation not
+# permitted (os error 1)", breaking the runtime sync. It never affects what
+# resolves or from where, so it is safe under no_config isolation.
 FORWARDED_UV_SETTINGS = frozenset({
     "UV_INDEX_URL", "UV_EXTRA_INDEX_URL", "UV_DEFAULT_INDEX", "UV_INDEX", "UV_NO_INDEX",
     "UV_FIND_LINKS", "UV_INDEX_STRATEGY", "UV_KEYRING_PROVIDER",
     "UV_NATIVE_TLS", "UV_INSECURE_HOST", "UV_HTTP_TIMEOUT",
+    "UV_LINK_MODE",
 })
 
 _UV_INDEX_KNOBS = ("UV_INDEX_URL", "UV_DEFAULT_INDEX", "UV_INDEX")
