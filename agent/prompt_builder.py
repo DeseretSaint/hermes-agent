@@ -1317,6 +1317,18 @@ def _label_visible_entries(visible_entries: list[dict], skills_by_category: dict
         skills_by_category.setdefault(category, []).append((entry["load_name"], desc))
 
 
+INTERACTIVE_SKILLS_LOAD_GUIDANCE = (
+    "Before replying, scan the skill index. If one skill clearly matches the user's "
+    "intent, load it with skill_view(name) and follow it. If several match, load the "
+    "single best-matching skill first. Do not load adjacent skills for later phases. "
+    "Match intent, not isolated keywords: debugging an existing tool is not automatically "
+    "an adoption or management task. After the first skill establishes the procedure, "
+    "load another only when a new subtask requires it. If no skill clearly matches, act "
+    "with normal tools. Keep routing lightweight; do not read a document corpus just to "
+    "decide which skill to load.\n"
+)
+
+
 def _render_skills_index(
     skills_by_category: dict[str, list[tuple[str, str]]], category_descriptions: dict[str, str],
     compact_categories: frozenset[str] | None, available_tools: set[str] | None, unloadable: list[str] = (),
@@ -1361,16 +1373,8 @@ def _render_skills_index(
         )
     return (
         "## Skills\n"
-        "Before replying, scan the skills below. If a skill matches or is even partially relevant to your "
-        "task, you MUST load it with skill_view(name) and follow its instructions. Err on the side of "
-        "loading — it is always better to have context you don't need than to miss critical steps, pitfalls, "
-        "or established workflows. Skills contain specialized knowledge — API endpoints, tool-specific "
-        "commands, and proven workflows that outperform general-purpose approaches. Load the skill "
-        f"even if you think you could handle the task with basic tools like {_basic_tools}. "
-        "Skills also encode the user's preferred approach, conventions, and quality standards for tasks like "
-        "code review, planning, and testing — load them even for tasks you already know how to do, because "
-        "the skill defines how it should be done here.\n"
-        "If a skill has issues, fix it with skill_manage(action='patch').\n"
+        + INTERACTIVE_SKILLS_LOAD_GUIDANCE
+        + "If a skill has issues, fix it with skill_manage(action='patch').\n"
         "After difficult/iterative tasks, offer to save as a skill. If a skill you loaded was missing steps, "
         "had wrong commands, or needed pitfalls you discovered, update it before finishing.\n"
         "\n"
