@@ -598,6 +598,12 @@
     --backdrop-invert-mul: 1;
   }
 
+  :root:not(.dark) {
+    /* F-01: light-theme tertiary text was 3.47–3.53:1 against the page and
+       failed AA. 66% is the measured floor-plus-step; dark keeps 54%. */
+    --ui-text-tertiary: color-mix(in srgb, var(--ui-base) 66%, transparent);
+  }
+
   :root.dark {
     /* Per-mode mix knobs — overridden inline by `applyTheme()` per skin. */
     --theme-mix-chrome: 74%;
